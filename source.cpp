@@ -5,7 +5,8 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 const int OBJECT_SIZE = 15;
 const float GRAVITY = 0.00005;
-const float INITIAL_VELOCITY = 0.1;
+const float DEFAULT_INITIAL_VELOCITY = 0.1;
+float INITIAL_VELOCITY = DEFAULT_INITIAL_VELOCITY;
 
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
@@ -91,6 +92,13 @@ void drawTrajectory(int mouseX, int mouseY, float projectileX, float projectileY
     }
 }
 
+float getInitialVelocity(int mouseX, int mouseY, float projectileX, float projectileY) {
+    float angle = getAngle(mouseX, mouseY, projectileX, projectileY);
+    float maximumHeight = (-1 * (float)mouseY) + projectileY;
+    float vel = sqrt(((2*GRAVITY*maximumHeight) / (std::sin(angle) * std::sin(angle))));
+    return vel != vel ? DEFAULT_INITIAL_VELOCITY : vel;
+}
+
 int main(int argc, char* args[]) {
     init();
 
@@ -101,6 +109,8 @@ int main(int argc, char* args[]) {
 
     Projectile projectile;
 
+    bool useDefaultVel = true;
+
     while(!quit) {
         int mouseX, mouseY;
         while(SDL_PollEvent(&event) != 0) {
@@ -110,10 +120,11 @@ int main(int argc, char* args[]) {
             if(event.type == SDL_KEYDOWN && event.key.repeat == 0) {
                 switch(event.key.keysym.sym) {
                     case SDLK_SPACE : projectile.resetPosition(); break;
+                    case SDLK_m : useDefaultVel = !useDefaultVel; break;
                 }
             }
             SDL_GetMouseState(&mouseX, &mouseY);
-            if(event.type  == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 projectile.resetPosition();
                 projectile.getTrueCoords();
                 projectile.throwProjectile(mouseX, mouseY);
@@ -125,6 +136,8 @@ int main(int argc, char* args[]) {
         SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
         SDL_RenderDrawRect(gRenderer, &startPos);
+
+        INITIAL_VELOCITY = useDefaultVel ? DEFAULT_INITIAL_VELOCITY : getInitialVelocity(mouseX, mouseY, startPos.x + (OBJECT_SIZE / 2), startPos.y + (OBJECT_SIZE / 2));
 
         drawTrajectory(mouseX, mouseY, startPos.x + (OBJECT_SIZE / 2), startPos.y + (OBJECT_SIZE / 2));
 
